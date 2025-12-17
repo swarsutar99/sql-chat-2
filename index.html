@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Vanna Chat</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .card {
+      max-width: 420px;
+      margin: 120px auto;
+      background: #020617;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 18px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    button {
+      margin-top: 14px;
+     
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    .error {
+      margin-top: 10px;
+      color: #ef4444;
+      font-size: 13px;
+      display: none;
+    }
+
+    /* Chat UI */
+    #chatContainer {
+      display: none;
+      max-width: 900px;
+      margin: 30px auto;
+      background: #020617;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    #chatBox {
+      height: 420px;
+      overflow-y: auto;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+    }
+
+    .msg.user {
+      color: #93c5fd;
+      margin-bottom: 8px;
+    }
+
+    .msg.bot {
+      color: #e5e7eb;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .row input {
+      flex: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox" class="card">
+  <h2>Admin Login</h2>
+  <input id="email" type="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="login()">Login</button>
+  <div id="loginError" class="error">Invalid email or password</div>
+</div>
+
+<!-- CHAT -->
+<div id="chatContainer">
+  <h2>Vanna Chat</h2>
+
+  <div id="chatBox"></div>
+
+  <div class="row">
+    <input
+      id="messageInput"
+      placeholder="Ask something like: show tables"
+      onkeydown="if(event.key==='Enter'){sendMessage()}"
+    />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+  const loginBox = document.getElementById("loginBox");
+  const chatContainer = document.getElementById("chatContainer");
+  const loginError = document.getElementById("loginError");
+  const chatBox = document.getElementById("chatBox");
+  const input = document.getElementById("messageInput");
+
+  // persistent conversation id
+  const conversationId =
+    Date.now() + "-" + Math.random().toString(36).slice(2);
+
+  function addMessage(text, cls) {
+    const div = document.createElement("div");
+    div.className = "msg " + cls;
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  async function login() {
+    loginError.style.display = "none";
+
+    const formData = new FormData();
+    formData.append("email", document.getElementById("email").value);
+    formData.append("password", document.getElementById("password").value);
+
+    const res = await fetch("http://localhost:8000/login", {
+  method: "POST",
+  body: formData,
+  credentials: "include"
+});
+
+    if (res.ok) {
+      loginBox.style.display = "none";
+      chatContainer.style.display = "block";
+    } else {
+      loginError.style.display = "block";
+    }
+  }
+
+  async function sendMessage() {
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage("You: " + message, "user");
+    input.value = "";
+
+    const requestId =
+      Date.now() + "-" + Math.random().toString(36).slice(2);
+
+    const res = await fetch("http://localhost:8000/api/vanna/v2/chat_sse", {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+        message: message,
+        conversation_id: conversationId,
+        request_id: requestId,
+        metadata: {}
+      })
+});
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop();
+
+      for (const part of parts) {
+        if (!part.startsWith("data:")) continue;
+
+        const dataStr = part.replace("data:", "").trim();
+        if (dataStr === "[DONE]") return;
+
+        try {
+          const payload = JSON.parse(dataStr);
+          if (payload?.simple?.text) {
+            addMessage(payload.simple.text, "bot");
+          }
+        } catch {}
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
