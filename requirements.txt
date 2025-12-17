@@ -1,6 +1,7 @@
 fastapi>=0.104.1,<0.111
-uvicorn==0.24.0
-vanna==2.0.1        
-pymysql==1.1.0
-chromadb==0.4.22     
-anthropic==0.3.3   
+uvicorn>=0.25.0
+vanna>=1.11.0,<2.0.0
+chromadb>=0.4.0,<0.5.0
+anthropic>=0.3.0,<0.4.0
+pymysql
+python-dotenv
