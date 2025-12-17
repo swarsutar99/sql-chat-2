@@ -1,0 +1,5 @@
+# Make sure venv is activated
+source venv/bin/activate
+
+# Export installed packages
+pip freeze > requirements.txt
