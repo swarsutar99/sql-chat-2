@@ -1,5 +1,6 @@
-# Make sure venv is activated
-source venv/bin/activate
-
-# Export installed packages
-pip freeze > requirements.txt
+fastapi==0.104.1
+uvicorn==0.24.0
+vanna==2.0.1        
+pymysql==1.1.0
+chromadb==0.4.22     
+anthropic==0.3.3   
