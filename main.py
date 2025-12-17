@@ -46,7 +46,7 @@ def get_auth_db():
 # -------------------------------------------------------------------
 llm = AnthropicLlmService(
     model="claude-sonnet-4-20250514",
-    api_key="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"
+    api_key=os.getenv("ANTHROPIC_API_KEY")
 )
 
 # -------------------------------------------------------------------
