@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Vanna Chat</title>
+  <title>BS Chat</title>
 
   <style>
     body {
@@ -117,7 +117,7 @@
 
 <!-- CHAT -->
 <div id="chatContainer">
-  <h2>Vanna Chat</h2>
+  <h2>Heroic Chat</h2>
 
   <div id="chatBox"></div>
 
@@ -157,7 +157,7 @@
     formData.append("email", document.getElementById("email").value);
     formData.append("password", document.getElementById("password").value);
 
-    const res = await fetch("http://localhost:8000/login", {
+    const res = await fetch("/login", {
   method: "POST",
   body: formData,
   credentials: "include"
@@ -181,7 +181,7 @@
     const requestId =
       Date.now() + "-" + Math.random().toString(36).slice(2);
 
-    const res = await fetch("http://localhost:8000/api/vanna/v2/chat_sse", {
+    const res = await fetch("/api/vanna/v2/chat_sse", {
   method: "POST",
   credentials: "include",
   headers: { "Content-Type": "application/json" },
@@ -220,6 +220,31 @@
       }
     }
   }
+</script>
+<script>
+  async function checkAuth() {
+    try {
+      const res = await fetch("/me", {
+        credentials: "include"
+      });
+
+      if (res.ok) {
+        // already logged in
+        loginBox.style.display = "none";
+        chatContainer.style.display = "block";
+      } else {
+        // not logged in
+        loginBox.style.display = "block";
+        chatContainer.style.display = "none";
+      }
+    } catch (e) {
+      loginBox.style.display = "block";
+      chatContainer.style.display = "none";
+    }
+  }
+
+  // run on page load
+  document.addEventListener("DOMContentLoaded", checkAuth);
 </script>
 
 </body>
